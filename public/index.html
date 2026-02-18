@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocFix — Répare tes docs pour Teams</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f3ee;
+      --surface: #ffffff;
+      --border: #e0ddd6;
+      --accent: #1a1a2e;
+      --accent2: #4f46e5;
+      --text: #1a1a2e;
+      --muted: #8a8680;
+      --green: #16a34a;
+      --red: #dc2626;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 560px;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: white;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 2.4rem;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    h1 span { color: var(--accent2); }
+
+    .sub {
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1.6;
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.06);
+    }
+
+    /* Drop zone */
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 52px 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: var(--bg);
+      position: relative;
+    }
+
+    #drop-zone:hover, #drop-zone.dragover {
+      border-color: var(--accent2);
+      background: #eeecff;
+      transform: translateY(-2px);
+    }
+
+    #drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      font-size: 2.8rem;
+      margin-bottom: 14px;
+      display: block;
+    }
+
+    .drop-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+    }
+
+    .drop-hint {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* File selected state */
+    #file-info {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      background: #f0fdf4;
+      border: 1.5px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 20px;
+    }
+
+    #file-info.show { display: flex; }
+
+    .file-icon {
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+
+    .file-name {
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--green);
+      word-break: break-all;
+    }
+
+    .file-size {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Fix options */
+    .options {
+      margin-top: 24px;
+    }
+
+    .options-title {
+      font-size: 0.82rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .option:last-child { border-bottom: none; }
+
+    .option input[type="checkbox"] {
+      margin-top: 2px;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent2);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .option-label {
+      font-size: 0.9rem;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+
+    .option-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Button */
+    #fix-btn {
+      width: 100%;
+      margin-top: 28px;
+      padding: 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #fix-btn:hover:not(:disabled) {
+      background: var(--accent2);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(79,70,229,0.3);
+    }
+
+    #fix-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Progress */
+    #progress {
+      display: none;
+      margin-top: 20px;
+    }
+    #progress.show { display: block; }
+
+    .progress-bar-bg {
+      background: var(--border);
+      border-radius: 100px;
+      height: 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent2);
+      border-radius: 100px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .progress-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* Result */
+    #result {
+      display: none;
+      margin-top: 20px;
+    }
+    #result.show { display: block; }
+
+    .result-success {
+      background: #f0fdf4;
+      border: 1.5px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .result-success .icon { font-size: 2rem; margin-bottom: 8px; }
+    .result-success .title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--green);
+      margin-bottom: 4px;
+    }
+    .result-success .desc { font-size: 0.83rem; color: var(--muted); margin-bottom: 16px; }
+
+    #download-btn {
+      display: inline-block;
+      background: var(--green);
+      color: white;
+      text-decoration: none;
+      padding: 11px 28px;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    #download-btn:hover {
+      background: #15803d;
+      transform: translateY(-1px);
+    }
+
+    .result-error {
+      background: #fef2f2;
+      border: 1.5px solid #fecaca;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .result-error .icon { font-size: 2rem; margin-bottom: 8px; }
+    .result-error .title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+    .result-error .desc { font-size: 0.83rem; color: var(--muted); }
+
+    /* Reset */
+    #reset-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.82rem;
+      cursor: pointer;
+      margin-top: 14px;
+      text-decoration: underline;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #reset-btn:hover { color: var(--text); }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="badge">✦ Bienvenue Alexia, la plus belle 💛</div>
+    <h1>Répare ton doc<br/><span>pour Teams</span></h1>
+    <p class="sub">Upload ton fichier Word — on corrige les espaces<br/>et les décalages pour un rendu parfait sur Teams.</p>
+  </header>
+
+  <div class="card">
+
+    <!-- Drop zone -->
+    <div id="drop-zone">
+      <input type="file" id="file-input" accept=".docx" />
+      <span class="drop-icon">📄</span>
+      <div class="drop-title">Glisse ton fichier ici</div>
+      <div class="drop-hint">ou clique pour choisir — .docx uniquement</div>
+    </div>
+
+    <!-- File info -->
+    <div id="file-info">
+      <span class="file-icon">✅</span>
+      <div>
+        <div class="file-name" id="file-name-text">—</div>
+        <div class="file-size" id="file-size-text">—</div>
+      </div>
+    </div>
+
+    <!-- Options -->
+    <div class="options">
+      <div class="options-title">Corrections à appliquer</div>
+
+      <label class="option">
+        <input type="checkbox" id="opt-spacing" checked />
+        <div>
+          <div class="option-label">Corriger les espacements</div>
+          <div class="option-desc">Supprime les espaces vides excessifs entre les paragraphes</div>
+        </div>
+      </label>
+
+      <label class="option">
+        <input type="checkbox" id="opt-margins" checked />
+        <div>
+          <div class="option-label">Standardiser les marges</div>
+          <div class="option-desc">Applique des marges compatibles avec Word Online / Teams</div>
+        </div>
+      </label>
+
+      <label class="option">
+        <input type="checkbox" id="opt-fonts" checked />
+        <div>
+          <div class="option-label">Normaliser les polices</div>
+          <div class="option-desc">Remplace les polices qui ne s'affichent pas sur Teams</div>
+        </div>
+      </label>
+
+      <label class="option">
+        <input type="checkbox" id="opt-images" checked />
+        <div>
+          <div class="option-label">Fixer le positionnement des images</div>
+          <div class="option-desc">Convertit les objets flottants en éléments en ligne (inline)</div>
+        </div>
+      </label>
+
+      <label class="option">
+        <input type="checkbox" id="opt-tables" checked />
+        <div>
+          <div class="option-label">Nettoyer les tableaux</div>
+          <div class="option-desc">Standardise les bordures et cellules des tableaux</div>
+        </div>
+      </label>
+    </div>
+
+    <!-- Button -->
+    <button id="fix-btn" disabled>Choisir un fichier d'abord</button>
+
+    <!-- Progress -->
+    <div id="progress">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-label" id="progress-label">Correction en cours…</div>
+    </div>
+
+    <!-- Result -->
+    <div id="result"></div>
+
+    <button id="reset-btn" style="display:none;" onclick="resetAll()">↺ Recommencer avec un autre fichier</button>
+
+  </div>
+
+  <footer>Aucun fichier n'est stocké — traitement 100% local &amp; privé ✦</footer>
+</div>
+
+<script>
+  let selectedFile = null;
+  let downloadUrl = null;
+
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const fileInfo = document.getElementById('file-info');
+  const fileNameText = document.getElementById('file-name-text');
+  const fileSizeText = document.getElementById('file-size-text');
+  const fixBtn = document.getElementById('fix-btn');
+  const progressEl = document.getElementById('progress');
+  const progressFill = document.getElementById('progress-fill');
+  const progressLabel = document.getElementById('progress-label');
+  const resultEl = document.getElementById('result');
+  const resetBtn = document.getElementById('reset-btn');
+
+  // Drag & drop
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!file.name.endsWith('.docx')) {
+      alert('Merci d\'uploader un fichier .docx uniquement.');
+      return;
+    }
+    selectedFile = file;
+    fileNameText.textContent = file.name;
+    fileSizeText.textContent = (file.size / 1024).toFixed(1) + ' Ko';
+    fileInfo.classList.add('show');
+    fixBtn.disabled = false;
+    fixBtn.textContent = '🔧 Corriger le document';
+    resultEl.className = '';
+    resultEl.innerHTML = '';
+    resetBtn.style.display = 'none';
+  }
+
+  fixBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    const options = {
+      fix_spacing: document.getElementById('opt-spacing').checked,
+      fix_margins: document.getElementById('opt-margins').checked,
+      fix_fonts: document.getElementById('opt-fonts').checked,
+      fix_images: document.getElementById('opt-images').checked,
+      fix_tables: document.getElementById('opt-tables').checked,
+    };
+
+    fixBtn.disabled = true;
+    fixBtn.textContent = 'Correction en cours…';
+    progressEl.classList.add('show');
+    resultEl.className = '';
+    resultEl.innerHTML = '';
+
+    // Animate progress bar
+    let prog = 0;
+    const steps = [
+      [20, 'Lecture du document…'],
+      [45, 'Correction des espacements…'],
+      [65, 'Ajustement des marges…'],
+      [80, 'Repositionnement des images…'],
+      [92, 'Finalisation…'],
+    ];
+    let stepIdx = 0;
+    const interval = setInterval(() => {
+      if (stepIdx < steps.length) {
+        prog = steps[stepIdx][0];
+        progressLabel.textContent = steps[stepIdx][1];
+        progressFill.style.width = prog + '%';
+        stepIdx++;
+      }
+    }, 600);
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('options', JSON.stringify(options));
+
+    try {
+      const response = await fetch('/api/fix', {
+        method: 'POST',
+        body: formData,
+      });
+
+      clearInterval(interval);
+      progressFill.style.width = '100%';
+      progressLabel.textContent = 'Terminé !';
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Erreur inconnue' }));
+        throw new Error(err.error || 'Erreur serveur');
+      }
+
+      const blob = await response.blob();
+      downloadUrl = URL.createObjectURL(blob);
+      const fixedName = selectedFile.name.replace('.docx', '_teams.docx');
+
+      setTimeout(() => {
+        progressEl.classList.remove('show');
+        resultEl.classList.add('show');
+        resultEl.innerHTML = `
+          <div class="result-success">
+            <div class="icon">🎉</div>
+            <div class="title">Document corrigé avec succès !</div>
+            <div class="desc">Télécharge le fichier et remet-le sur Teams — il s'affichera correctement.</div>
+            <a id="download-btn" href="${downloadUrl}" download="${fixedName}">⬇️ Télécharger ${fixedName}</a>
+          </div>`;
+        resetBtn.style.display = 'block';
+        fixBtn.textContent = '🔧 Corriger le document';
+        fixBtn.disabled = false;
+      }, 400);
+
+    } catch (err) {
+      clearInterval(interval);
+      progressEl.classList.remove('show');
+      resultEl.classList.add('show');
+      resultEl.innerHTML = `
+        <div class="result-error">
+          <div class="icon">❌</div>
+          <div class="title">Une erreur est survenue</div>
+          <div class="desc">${err.message}</div>
+        </div>`;
+      fixBtn.textContent = '🔧 Corriger le document';
+      fixBtn.disabled = false;
+      resetBtn.style.display = 'block';
+    }
+  });
+
+  function resetAll() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileInfo.classList.remove('show');
+    fileNameText.textContent = '—';
+    fileSizeText.textContent = '—';
+    fixBtn.disabled = true;
+    fixBtn.textContent = 'Choisir un fichier d\'abord';
+    progressEl.classList.remove('show');
+    progressFill.style.width = '0%';
+    resultEl.className = '';
+    resultEl.innerHTML = '';
+    resetBtn.style.display = 'none';
+    if (downloadUrl) { URL.revokeObjectURL(downloadUrl); downloadUrl = null; }
+  }
+</script>
+</body>
+</html>
